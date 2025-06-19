@@ -17,3 +17,14 @@ def register_agent(agent_data, email=None):
     if _default_client is None:
         _default_client = AstraSync(email=email)
     return _default_client.register(agent_data)
+
+# Agentforce integration
+try:
+    from .adapters.agentforce import (
+        register_agentforce,
+        register_agentforce_deployment,
+        AgentforceAdapter
+    )
+except ImportError:
+    # Agentforce adapter not available
+    pass

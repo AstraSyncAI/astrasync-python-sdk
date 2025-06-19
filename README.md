@@ -1,191 +1,282 @@
 # AstraSync Python SDK
 
-Universal AI agent registration for blockchain compliance. Auto-detects agent formats from all major frameworks.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> 🚀 **Developer Preview**: Currently issuing temporary IDs. [Sign up for early access](https://astrasync.ai/auth) to get permanent blockchain verification when we launch.
+Universal AI agent registration with blockchain compliance tracking. Auto-detects agent formats from OpenAI, MCP, Letta, IBM ACP, AutoGPT, and Salesforce Agentforce.
 
-## Installation
+## 🚀 Quick Start
 
 ```bash
-# Coming soon to PyPI
-# For now, install from GitHub:
+# Clone the repository
 git clone https://github.com/AstraSyncAI/astrasync-python-sdk.git
 cd astrasync-python-sdk
+
+# Install in development mode
 pip install -e .
+
+# Or install from GitHub directly
+pip install git+https://github.com/AstraSyncAI/astrasync-python-sdk.git
 ```
 
-## Quick Start
+## 📋 Features
 
-```python
-from astrasync import register
+- 🔍 **Universal Auto-Detection**: Automatically identifies agent formats from major frameworks
+- ⚡ **30-Second Integration**: Simple API for instant agent registration
+- 🎯 **Developer Preview**: Free registration with temporary IDs during preview
+- 📊 **Trust Scores**: Automatic calculation based on agent capabilities
+- 🎨 **Beautiful CLI**: Rich terminal output with progress indicators
+- 🏢 **Enterprise Ready**: Salesforce Agentforce support for regulated industries
 
-@register(email="your-email@example.com")
-def my_agent(prompt):
-    """An AI agent that processes prompts"""
-    return f"Processed: {prompt}"
+## 🤖 Supported Agent Formats
 
-# Your agent is now registered with a temporary ID
-print(f"Agent ID: {my_agent._astrasync_id}")
-```
+### ✅ Auto-Detected Formats
 
-## CLI Usage
+- **OpenAI Assistants** - `model` + `instructions` pattern
+- **MCP Servers** - Model Context Protocol agents
+- **Letta (MemGPT)** - Memory-enabled autonomous agents  
+- **IBM Agent Control Protocol** - Enterprise agent standard
+- **AutoGPT** - Autonomous goal-driven agents
+- **Salesforce Agentforce** - Enterprise digital labor platform
 
-```bash
-# Check API health
-astrasync health
+### 🔜 Coming Soon
 
-# Register an agent from file
-astrasync register agent.json --email dev@example.com
-```
+- CrewAI multi-agent systems
+- LangChain agents
+- Custom formats via plugins
 
-## Auto-Detection Magic
+## 💻 Usage Examples
 
-The SDK automatically detects and registers agents from:
-- ✅ OpenAI Agents SDK
-- ✅ MCP (Model Context Protocol)
-- ✅ Letta (formerly MemGPT)
-- ✅ IBM ACP
-- ✅ AutoGPT
-- 🔜 CrewAI (coming this week)
-- 🔜 LangChain (coming this week)
-
-## Why AstraSync?
-
-As AI agents become more powerful, they need verifiable identity and compliance tracking. AstraSync provides the infrastructure for the emerging agent economy.
-
-## Developer Preview Notes
-
-- Currently issuing TEMP- prefixed IDs
-- These automatically convert to permanent IDs when you create an account
-- Trust scores are simulated (70-95% range)
-- Full blockchain integration coming in production release
-
-## Examples
-
-### Register an OpenAI Agent
-
-```python
-from astrasync import AstraSync
-
-client = AstraSync(email="developer@example.com")
-
-# OpenAI agent format
-openai_agent = {
-    "name": "Customer Support Bot",
-    "model": "gpt-4",
-    "instructions": "You are a helpful customer support agent",
-    "tools": [{"type": "retrieval"}, {"type": "code_interpreter"}]
-}
-
-result = client.register(openai_agent)
-print(f"Registered with ID: {result['agentId']}")
-```
-
-### Register from File
-
-```python
-from astrasync import AstraSync
-
-client = AstraSync(email="developer@example.com")
-result = client.register("path/to/agent.json")
-print(f"Registered with ID: {result['agentId']}")
-```
-
-### Using the Decorator Pattern
-
-```python
-from astrasync import register
-
-@register(
-    email="developer@example.com",
-    name="Analytics Agent",
-    description="Processes data and generates insights"
-)
-class AnalyticsAgent:
-    def analyze(self, data):
-        # Your agent logic here
-        return {"insights": "..."}
-
-# Access registration info
-print(f"Agent ID: {AnalyticsAgent._astrasync_id}")
-```
-
-## Supported Agent Formats
-
-### OpenAI Format
-```json
-{
-  "name": "Agent Name",
-  "model": "gpt-4",
-  "instructions": "Agent instructions",
-  "tools": [{"type": "retrieval"}]
-}
-```
-
-### MCP Format
-```json
-{
-  "protocol": "ai-agent",
-  "name": "MCP Agent",
-  "skills": [
-    {"id": "skill1", "description": "..."}
-  ]
-}
-```
-
-### Letta Format
-```json
-{
-  "type": "agent",
-  "memory": {
-    "human": "User information",
-    "persona": "Agent persona"
-  }
-}
-```
-
-## API Reference
-
-### AstraSync Class
+### Basic Registration
 
 ```python
 from astrasync import AstraSync
 
 # Initialize client
-client = AstraSync(
-    email="developer@example.com",  # Optional: can use env var ASTRASYNC_EMAIL
-    api_url="https://..."          # Optional: defaults to production
-)
+client = AstraSync(email="developer@example.com")
 
-# Register an agent
-result = client.register(agent_data)  # Dict, JSON string, or file path
+# Register any supported agent format
+result = client.register({
+    "name": "Customer Support Bot",
+    "model": "gpt-4",
+    "instructions": "Help customers with their queries"
+})
 
-# Verify an agent
-verification = client.verify(agent_id)
+print(f"Agent registered with ID: {result['agentId']}")
+# Output: Agent registered with ID: TEMP-1734567890123-ABC123
 ```
 
-### Environment Variables
+### Auto-Detection Magic
 
-- `ASTRASYNC_EMAIL` - Default email for registrations
-- `ASTRASYNC_API_URL` - API endpoint (defaults to production)
+```python
+# OpenAI format - automatically detected
+openai_agent = {
+    "name": "Sales Assistant",
+    "model": "gpt-4", 
+    "instructions": "Help with sales inquiries",
+    "tools": [{"type": "retrieval"}]
+}
 
-## Contributing
+# MCP format - automatically detected
+mcp_agent = {
+    "protocol": "ai-agent",
+    "skills": ["query", "update"],
+    "capabilities": {"streaming": True}
+}
 
-We're in active development! Feel free to open issues or submit PRs.
+# Letta format - automatically detected
+letta_agent = {
+    "type": "agent",
+    "memory": {"type": "core_memory"},
+    "model": "gpt-4"
+}
 
-## Links
+# Register any format - auto-detection handles it!
+for agent in [openai_agent, mcp_agent, letta_agent]:
+    result = client.register(agent)
+    print(f"Registered {agent.get('name', 'agent')} as type: {result.get('agentType')}")
+```
 
-- [JavaScript SDK](https://github.com/AstraSyncAI/astrasync-node-sdk)
-- [Documentation](https://docs.astrasync.ai) (coming soon)
-- [Sign up for Developer Preview](https://astrasync.ai/auth)
-- [API Status](https://astrasync-api-production.up.railway.app)
+### 🆕 Salesforce Agentforce Support (NEW!)
 
-## License
+Perfect for enterprises requiring blockchain-based compliance tracking.
 
-MIT License - see LICENSE file for details
+```python
+from astrasync.adapters.agentforce import register_agentforce
 
-## Support
+# Register your Agentforce agent
+agent_config = {
+    "name": "Customer Service Agent",
+    "agent_type": "External",
+    "agent_template_type": "EinsteinServiceAgent",
+    "company_name": "YourCompany",
+    "topics": ["support", "orders"]
+}
 
-- 📧 Email: developers@astrasync.ai
-- 💬 Discord: [Join our community](https://discord.gg/astrasync) (coming soon)
+result = register_agentforce(agent_config, email="you@company.com")
+print(f"AstraSync ID: {result['agentId']}")
+```
+
+**Ideal for:**
+- 🏦 Financial services (every decision traceable)
+- 🏥 Healthcare (HIPAA compliance built-in)
+- 🏢 Enterprise deployments (SOX compliance)
+- 🛍️ AgentExchange marketplace (verified trust scores)
+
+[See full Agentforce example →](examples/agentforce_example.py)
+
+### Decorator Pattern
+
+```python
+from astrasync import register
+
+@register(email="developer@example.com")
+def my_agent(prompt):
+    return f"Response to: {prompt}"
+
+# The agent is automatically registered when defined!
+# Access the ID via my_agent.astrasync_id
+```
+
+### Using the CLI
+
+```bash
+# Check API health
+astrasync health
+
+# Register from command line
+astrasync register --name "My Agent" --email "dev@example.com"
+
+# Beautiful output with rich formatting!
+```
+
+## 🎯 Developer Preview
+
+During our developer preview, all agents receive **temporary IDs** (TEMP-xxxx format) that will automatically convert to permanent blockchain-registered IDs when you create your AstraSync account.
+
+### Why Developer Preview?
+
+- ✅ **Instant Testing**: Start integrating immediately
+- ✅ **No Blockchain Setup**: Skip the complexity during development
+- ✅ **Free Registration**: No costs during preview
+- ✅ **Automatic Migration**: Your TEMP IDs convert to permanent IDs
+
+### What Happens Next?
+
+1. Use the same email when creating your AstraSync account
+2. All your preview agents automatically migrate
+3. Receive permanent blockchain IDs
+4. Full audit trail and compliance features activate
+
+## 📁 Examples
+
+Check out the `examples/` directory for complete code:
+
+- `quickstart.py` - Basic usage patterns
+- `auto_detection.py` - See auto-detection in action
+- `agentforce_example.py` - Salesforce Agentforce integration
+- `decorator_example.py` - Using the @register decorator
+
+## 🛠️ API Reference
+
+### AstraSync Class
+
+```python
+client = AstraSync(email="your@email.com", api_url=None)
+```
+
+- `email` (required): Your developer email
+- `api_url` (optional): Custom API endpoint (defaults to production)
+
+### Methods
+
+#### `register(agent_data) -> dict`
+
+Registers an agent with auto-detection.
+
+**Parameters:**
+- `agent_data`: Dict, JSON string, or file path containing agent configuration
+
+**Returns:**
+```python
+{
+    "agentId": "TEMP-1234567890-XXXXX",
+    "status": "registered",
+    "trustScore": "TEMP-85%",
+    "agentType": "detected-type"
+}
+```
+
+### Supported Input Formats
+
+The SDK accepts agents in multiple formats:
+
+- Python dictionaries
+- JSON strings
+- File paths (`.json` files)
+- Agent objects (with appropriate adapters)
+
+## 🌟 Trust Score Calculation
+
+Trust scores (0-95% during preview) are calculated based on:
+
+- ✓ Agent name quality
+- ✓ Description completeness  
+- ✓ Number of capabilities
+- ✓ Version information
+- ✓ Platform-specific features
+
+## 🔧 Development
+
+```bash
+# Clone the repo
+git clone https://github.com/AstraSyncAI/astrasync-python-sdk.git
+cd astrasync-python-sdk
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install in development mode
+pip install -e .
+
+# Run tests
+python examples/quickstart.py
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Roadmap
+
+- [x] Core SDK functionality
+- [x] Auto-detection for 5+ formats
+- [x] Beautiful CLI interface
+- [x] Salesforce Agentforce support
+- [ ] CrewAI integration (this week)
+- [ ] LangChain integration (this week)
+- [ ] PyPI publication
+- [ ] Async support
+- [ ] Batch registration
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## 🔗 Links
+
+- [AstraSync Website](https://astrasync.ai)
+- [Documentation](https://docs.astrasync.ai)
+- [API Reference](https://api.astrasync.ai/docs)
+- [GitHub Repository](https://github.com/AstraSyncAI/astrasync-python-sdk)
+
+## 💬 Support
+
+- 📧 Email: support@astrasync.ai
+- 💬 Discord: [Join our community](https://discord.gg/astrasync)
 - 🐛 Issues: [GitHub Issues](https://github.com/AstraSyncAI/astrasync-python-sdk/issues)
+
+---
+
+Built with ❤️ by the AstraSync team. Making AI agents accountable, one blockchain registration at a time.
