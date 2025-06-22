@@ -26,4 +26,18 @@ def calculate_trust_score(agent_data: Dict[str, Any]) -> int:
     if agent_data.get('version'):
         score += 5
     
+    # Google ADK specific bonuses
+    if agent_data.get('framework') == 'google-adk' or agent_data.get('agentType') == 'google-adk':
+        # Structured output capability adds trust
+        if agent_data.get('structured_output'):
+            score += 5  # Deterministic outputs are more trustworthy
+        
+        # Multi-agent orchestration indicates sophistication
+        if agent_data.get('orchestration_capable'):
+            score += 3
+        
+        # Session management indicates stateful compliance tracking
+        if 'session_service' in str(agent_data):
+            score += 2
+    
     return min(score, 95)  # Cap at 95 for preview

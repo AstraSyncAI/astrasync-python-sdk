@@ -8,19 +8,21 @@ from .utils.detector import detect_agent_type, normalize_agent_data
 from .utils.trust_score import calculate_trust_score
 from .exceptions import ValidationError
 
+
 class AstraSync:
     """AstraSync AI Agent Registration Client"""
     
     def __init__(self, email: Optional[str] = None, api_url: Optional[str] = None):
         self.email = email or os.getenv('ASTRASYNC_EMAIL')
         self.api_url = api_url or os.getenv(
-            'ASTRASYNC_API_URL', 
+            'ASTRASYNC_API_URL',
             'https://astrasync-api-production.up.railway.app'
         )
         self.api_client = APIClient(self.api_url)
-        
-    def register(self, agent: Union[Dict[str, Any], str, Path]) -> Dict[str, Any]:
+    
+    def register(self, agent: Union[Dict[str, Any], str, Path, Any]) -> Dict[str, Any]:
         """Register an AI agent with auto-detection"""
+        
         agent_data = self._parse_agent_input(agent)
         agent_type = detect_agent_type(agent_data)
         normalized = normalize_agent_data(agent_data, agent_type)
@@ -31,7 +33,7 @@ class AstraSync:
                 "Email required. Set via constructor, ASTRASYNC_EMAIL env var, "
                 "or include in agent data"
             )
-            
+        
         trust_score = calculate_trust_score(normalized)
         
         payload = {
@@ -39,7 +41,7 @@ class AstraSync:
             "agent": {
                 "name": normalized['name'],
                 "description": normalized['description'],
-                "owner": normalized['owner'],
+                "owner": normalized.get('owner') or email,  # Default owner to email if empty
                 "capabilities": normalized.get('capabilities', []),
                 "version": normalized.get('version', '1.0.0'),
                 "agentType": agent_type,
@@ -54,8 +56,9 @@ class AstraSync:
         """Verify if an agent is registered"""
         return self.api_client.verify(agent_id)
     
-    def _parse_agent_input(self, agent: Union[Dict, str, Path]) -> Dict:
-        """Parse various input formats"""
+    def _parse_agent_input(self, agent: Union[Dict, str, Path, Any]) -> Dict:
+        """Parse various input formats including Google ADK objects"""
+        
         if isinstance(agent, dict):
             return agent
         elif isinstance(agent, (str, Path)):
@@ -69,4 +72,19 @@ class AstraSync:
                 except json.JSONDecodeError:
                     raise ValidationError(f"Invalid input: {agent}")
         else:
-            raise ValidationError(f"Unsupported agent input type: {type(agent)}")
+            # Handle Google ADK agent objects and other objects
+            # Try to convert object to dictionary representation
+            if hasattr(agent, 'to_dict'):
+                # If the object has a to_dict method, use it
+                return agent.to_dict()
+            elif hasattr(agent, '__dict__'):
+                # Otherwise, pass the object itself for detection
+                # The detector will handle extracting attributes
+                return agent
+            else:
+                # If all else fails, try to extract basic attributes
+                return {
+                    'name': getattr(agent, 'name', agent.__class__.__name__),
+                    'type': agent.__class__.__name__,
+                    '_raw_object': agent
+                }
