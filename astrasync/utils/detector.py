@@ -1,116 +1,133 @@
-from typing import Dict, Any
+"""
+Agent type detection and normalization utilities
+"""
+from typing import Dict, Any, Union
 
-def detect_agent_type(agent_data: Dict[str, Any]) -> str:
-    """Auto-detect agent type based on structure"""
+
+def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
+    """Detect the type of agent from its configuration
     
-    # Google ADK agents - check FIRST before OpenAI
-    # Dictionary format with schemas
+    Args:
+        agent_data: Agent configuration (dict or object)
+        
+    Returns:
+        Agent type string
+    """
+    # Handle object instances
+    if not isinstance(agent_data, dict):
+        # Check for direct ADK agent instances
+        if hasattr(agent_data, '__class__'):
+            class_name = agent_data.__class__.__name__
+            module_name = getattr(agent_data.__class__, '__module__', '')
+            
+            if 'google.adk' in module_name or class_name in ['Agent', 'ADKAgent']:
+                return 'google-adk'
+        
+        # Convert to dict for further checks
+        if hasattr(agent_data, '__dict__'):
+            agent_data = agent_data.__dict__
+        else:
+            return 'unknown'
+    
+    # Check Google ADK patterns FIRST (before OpenAI)
     if ('input_schema' in agent_data and 'output_schema' in agent_data):
         return 'google-adk'
     
-    # Agent type field specific to ADK
-    if (agent_data.get('agent_type') in ['llm', 'sequential', 'parallel', 'loop'] and
-        ('runner' in agent_data or 'session_service' in agent_data)):
+    if 'agent_type' in agent_data and agent_data['agent_type'] in ['llm', 'sequential', 'parallel', 'loop']:
         return 'google-adk'
     
-    # Object instances
-    if hasattr(agent_data, '__class__'):
-        class_name = agent_data.__class__.__name__
-        module_name = getattr(agent_data.__class__, '__module__', '')
-        
-        # Check for ADK agent classes
-        if class_name in ['Agent', 'LlmAgent', 'BaseAgent', 'SequentialAgent', 
-                         'ParallelAgent', 'LoopAgent']:
-            if 'google.adk' in module_name or 'vertexai' in module_name:
-                return 'google-adk'
-    
-    # Serialized format
-    if isinstance(agent_data, dict) and 'config' in agent_data:
-        config = agent_data.get('config', {})
-        if 'agent_class' in config and 'google.adk' in str(config.get('agent_class')):
+    # Check for serialized ADK agents
+    if 'config' in agent_data and isinstance(agent_data['config'], dict):
+        config = agent_data['config']
+        if any(key in config for key in ['google.adk', 'ADKAgent', 'agent_type']):
             return 'google-adk'
     
-    # MCP agents
-    if (agent_data.get('protocol') == 'ai-agent' and
-        'skills' in agent_data and
-        isinstance(agent_data['skills'], list)):
+    # MCP (Model Context Protocol)
+    if 'protocol' in agent_data and agent_data['protocol'] == 'ai-agent':
         return 'mcp'
     
-    # Letta agents
-    if (agent_data.get('type') == 'agent' and
-        'memory' in agent_data and
-        isinstance(agent_data['memory'], dict)):
+    if 'skills' in agent_data and isinstance(agent_data.get('skills'), list):
+        if all(isinstance(skill, dict) and 'name' in skill for skill in agent_data['skills']):
+            return 'mcp'
+    
+    # Letta (MemGPT)
+    if 'memory' in agent_data and isinstance(agent_data.get('memory'), dict):
         return 'letta'
     
-    # ACP agents (IBM)
-    if ('agentId' in agent_data and
-        'authentication' in agent_data and
-        isinstance(agent_data['authentication'], dict)):
+    if 'type' in agent_data and agent_data['type'] == 'agent' and 'memory' in agent_data:
+        return 'letta'
+    
+    # IBM ACP (Agent Communication Protocol)
+    if 'agentId' in agent_data and 'authentication' in agent_data:
         return 'acp'
     
-    # OpenAI agents - check AFTER Google ADK
-    if ('model' in agent_data and
-        'instructions' in agent_data and
+    # OpenAI Assistants
+    if ('model' in agent_data and 'instructions' in agent_data and 
         isinstance(agent_data.get('tools'), list)):
         return 'openai'
     
-    # AutoGPT agents
-    if ('ai_name' in agent_data and
-        'ai_role' in agent_data and
-        'ai_goals' in agent_data):
+    # AutoGPT
+    if all(key in agent_data for key in ['ai_name', 'ai_role', 'ai_goals']):
         return 'autogpt'
     
-    # Salesforce Agentforce patterns
-    if agent_data.get('agent_type') in ['External', 'Internal'] and \
-       agent_data.get('agent_template_type') == 'EinsteinServiceAgent':
+    # Agentforce
+    if ('agent_type' in agent_data and agent_data['agent_type'] == 'External' and
+        'agent_template_type' in agent_data):
         return 'agentforce'
     
-    # Agentforce with topics/actions structure
-    if 'topics' in agent_data and isinstance(agent_data.get('system_messages'), list):
-        return 'agentforce'
-    
-    # Agentforce SDK object detection
-    if hasattr(agent_data, '__class__') and \
-       'agentforce' in str(agent_data.__class__.__module__).lower():
-        return 'agentforce-sdk'
-    
-    return 'generic'
+    return 'unknown'
 
 
-def normalize_agent_data(agent_data: Dict[str, Any], agent_type: str = None) -> Dict[str, Any]:
-    """Normalize agent data to common format"""
+def normalize_agent_data(agent_data: Union[Dict[str, Any], object]) -> Dict[str, Any]:
+    """Normalize agent data to a common format
     
-    if not agent_type:
-        agent_type = detect_agent_type(agent_data)
+    Args:
+        agent_data: Agent configuration (dict or object)
+        
+    Returns:
+        Normalized agent data dict
+    """
+    agent_type = detect_agent_type(agent_data)
     
+    # Convert object to dict if needed
+    if not isinstance(agent_data, dict):
+        if hasattr(agent_data, '__dict__'):
+            agent_data = agent_data.__dict__
+        else:
+            agent_data = {}
+    
+    # Base normalized structure
     normalized = {
         'agentType': agent_type,
-        'version': '1.0.0'  # Default version
+        'version': agent_data.get('version', '1.0.0'),
+        'name': '',
+        'description': '',
+        'capabilities': [],
+        'owner': ''  # Will be set properly below
     }
     
-    # MCP normalization
+    # Type-specific normalization
     if agent_type == 'mcp':
-        normalized['name'] = agent_data.get('name', 'MCP Agent')
-        normalized['description'] = agent_data.get('description', '')
+        normalized['name'] = agent_data.get('name', 'Unnamed MCP Agent')
+        normalized['description'] = agent_data.get('description', 'MCP protocol agent')
         normalized['capabilities'] = [skill.get('name', '') for skill in agent_data.get('skills', [])]
+        normalized['owner'] = agent_data.get('owner', agent_data.get('developer', ''))
     
-    # Letta normalization
     elif agent_type == 'letta':
-        normalized['name'] = agent_data.get('name', 'Letta Agent')
-        normalized['description'] = agent_data.get('description', '')
-        normalized['capabilities'] = ['memory_management', 'conversation']
+        normalized['name'] = agent_data.get('name', 'Unnamed Letta Agent')
+        normalized['description'] = agent_data.get('description', 'Memory-augmented agent')
+        normalized['capabilities'] = ['memory', 'recall', 'persistent_context']
+        normalized['owner'] = agent_data.get('owner', agent_data.get('creator', ''))
     
-    # ACP normalization
     elif agent_type == 'acp':
-        normalized['name'] = agent_data.get('name', agent_data.get('agentId', 'ACP Agent'))
-        normalized['description'] = agent_data.get('description', '')
+        normalized['name'] = agent_data.get('name', f"ACP Agent {agent_data.get('agentId', 'Unknown')}")
+        normalized['description'] = agent_data.get('description', 'IBM Agent Communication Protocol agent')
         normalized['capabilities'] = list(agent_data.get('capabilities', {}).keys())
+        normalized['owner'] = agent_data.get('owner', agent_data.get('organization', ''))
     
-    # OpenAI normalization
     elif agent_type == 'openai':
-        normalized['name'] = agent_data.get('name', 'OpenAI Assistant')
-        normalized['description'] = agent_data.get('instructions', '')[:200]
-        # Handle tools that might be strings or dicts
+        normalized['name'] = agent_data.get('name', 'Unnamed OpenAI Assistant')
+        normalized['description'] = agent_data.get('description', agent_data.get('instructions', 'OpenAI Assistant'))[:200]
         tools = agent_data.get('tools', [])
         normalized['capabilities'] = []
         for tool in tools:
@@ -118,108 +135,62 @@ def normalize_agent_data(agent_data: Dict[str, Any], agent_type: str = None) -> 
                 normalized['capabilities'].append(tool.get('type', ''))
             else:
                 normalized['capabilities'].append(str(tool))
-        normalized['model'] = agent_data.get('model', '')
+        normalized['owner'] = agent_data.get('owner', agent_data.get('created_by', ''))
     
-    # AutoGPT normalization
     elif agent_type == 'autogpt':
-        normalized['name'] = agent_data.get('ai_name', 'AutoGPT Agent')
-        normalized['description'] = agent_data.get('ai_role', '')
-        normalized['capabilities'] = agent_data.get('ai_goals', [])
+        normalized['name'] = agent_data.get('ai_name', 'Unnamed AutoGPT Agent')
+        normalized['description'] = agent_data.get('ai_role', 'AutoGPT autonomous agent')
+        normalized['capabilities'] = agent_data.get('ai_goals', [])[:5]  # Limit to 5 goals
+        normalized['owner'] = agent_data.get('owner', agent_data.get('user', ''))
     
-    # Google ADK normalization
     elif agent_type == 'google-adk':
-        # Handle dictionary configurations FIRST
-        if isinstance(agent_data, dict):
-            normalized['name'] = (
-                agent_data.get('name') or 
-                agent_data.get('id') or 
-                'Google ADK Agent'
-            )
-            
-            normalized['description'] = (
-                agent_data.get('description') or
-                agent_data.get('instructions', '')[:200] or
-                'Multi-agent orchestration powered by Google ADK'
-            )
-            
-            # Extract capabilities from tools
-            tools = agent_data.get('tools', [])
-            if tools:
-                normalized['capabilities'] = [
-                    t.get('name', 'tool') if isinstance(t, dict) else str(t)
-                    for t in tools
-                ]
-            else:
-                normalized['capabilities'] = []
-            
-            # Add orchestration capabilities for workflow agents
-            agent_subtype = agent_data.get('agent_type', '').lower()
-            if agent_subtype in ['sequential', 'parallel', 'loop']:
-                normalized['capabilities'].extend([
-                    f"{agent_subtype}_orchestration",
-                    "multi_agent_coordination"
-                ])
-            
-            # Include model if specified
-            if 'model' in agent_data:
-                normalized['model'] = agent_data['model']
+        normalized['name'] = agent_data.get('name', 'Unnamed ADK Agent')
+        normalized['description'] = agent_data.get('description', 'Multi-agent orchestration powered by Google ADK')
         
-        # Handle direct agent instances (objects)
-        else:
-            normalized['name'] = getattr(agent_data, 'name', 
-                                       getattr(agent_data, '__name__', 
-                                             agent_data.__class__.__name__))
-            
-            # Get description from docstring or instructions
-            normalized['description'] = (
-                getattr(agent_data, 'description', '') or
-                getattr(agent_data, '__doc__', '') or
-                getattr(agent_data, 'instructions', '')[:200] + '...' 
-                if hasattr(agent_data, 'instructions') else
-                f"Google ADK {agent_data.__class__.__name__} Agent"
-            )
-            
-            # Extract tools/capabilities
-            tools = getattr(agent_data, 'tools', [])
-            if tools:
-                normalized['capabilities'] = [
-                    tool.name if hasattr(tool, 'name') else str(tool)
-                    for tool in tools
-                ]
+        # Extract capabilities from tools or features
+        tools = agent_data.get('tools', [])
+        normalized['capabilities'] = []
+        for tool in tools:
+            if isinstance(tool, dict):
+                normalized['capabilities'].append(tool.get('type', tool.get('name', '')))
             else:
-                normalized['capabilities'] = [agent_data.__class__.__name__.lower()]
-            
-            # Get model information if available
-            if hasattr(agent_data, 'model'):
-                normalized['model'] = str(getattr(agent_data, 'model'))
+                normalized['capabilities'].append(str(tool))
         
-        # ADK-specific metadata (applies to both dicts and objects)
+        # Add ADK-specific capabilities
+        if agent_data.get('output_schema') or agent_data.get('structured_output'):
+            normalized['capabilities'].append('deterministic_output')
+        
+        # Add framework info
         normalized['framework'] = 'google-adk'
-        normalized['orchestration_capable'] = True
+        normalized['orchestration_capable'] = agent_data.get('agent_type') in ['sequential', 'parallel', 'loop']
+        normalized['structured_output'] = bool(agent_data.get('output_schema'))
         
-        # Add compliance-relevant ADK features
-        if hasattr(agent_data, 'output_schema') or (isinstance(agent_data, dict) and 'output_schema' in agent_data):
-            normalized['structured_output'] = True
-            if 'deterministic_output' not in normalized.get('capabilities', []):
-                normalized['capabilities'] = normalized.get('capabilities', []) + ['deterministic_output']
+        # FIX: Ensure owner is never empty for ADK agents
+        normalized['owner'] = agent_data.get('owner', agent_data.get('developer', 'ADK Developer'))
     
-    # Agentforce normalization
-    elif agent_type in ['agentforce', 'agentforce-sdk']:
-        normalized['name'] = agent_data.get('label', agent_data.get('name', 'Agentforce Agent'))
-        normalized['description'] = agent_data.get('description', 'Salesforce Agentforce agent')
-        if 'topics' in agent_data:
-            normalized['capabilities'] = [topic.get('label', 'topic') for topic in agent_data.get('topics', [])]
-        else:
-            normalized['capabilities'] = ['salesforce_integration']
+    elif agent_type == 'agentforce':
+        normalized['name'] = agent_data.get('label', 'Unnamed Agentforce Agent')
+        normalized['description'] = agent_data.get('description', f"{agent_data.get('agent_template_type', 'Salesforce')} agent")
+        topics = agent_data.get('topics', [])
+        normalized['capabilities'] = [topic.get('label', '') for topic in topics if isinstance(topic, dict)]
+        normalized['owner'] = agent_data.get('owner', agent_data.get('organization', 'Salesforce Org'))
     
-    # Generic fallback
     else:
-        normalized['name'] = agent_data.get('name', 'Generic Agent')
-        normalized['description'] = agent_data.get('description', '')
-        normalized['capabilities'] = agent_data.get('capabilities', [])
+        # Unknown type - use generic extraction
+        normalized['name'] = agent_data.get('name', agent_data.get('agent_name', 'Unnamed Agent'))
+        normalized['description'] = agent_data.get('description', 'Unknown agent type')
+        normalized['capabilities'] = agent_data.get('capabilities', agent_data.get('features', []))
+        normalized['owner'] = agent_data.get('owner', agent_data.get('creator', ''))
     
-    # Common fields
-    normalized['owner'] = agent_data.get('owner', '')
-    normalized['version'] = agent_data.get('version', normalized.get('version', '1.0.0'))
+    # Final validation - ensure no empty critical fields
+    if not normalized['name']:
+        normalized['name'] = f"Unnamed {agent_type} Agent"
+    
+    if not normalized['description']:
+        normalized['description'] = f"A {agent_type} agent"
+    
+    # CRITICAL FIX: Never leave owner empty
+    if not normalized['owner']:
+        normalized['owner'] = 'Unknown'
     
     return normalized
