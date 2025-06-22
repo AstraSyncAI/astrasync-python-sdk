@@ -1,80 +1,285 @@
-markdown# AstraSync Python SDK
+# AstraSync Python SDK
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue.svg)](https://github.com/AstraSyncAI/astrasync-python-sdk)
+[![Python](https://img.shields.io/badge/python-3.7+-green.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
-Universal AI agent registration with blockchain compliance tracking. Auto-detects agent formats from OpenAI, Google ADK, MCP, Letta, IBM ACP, AutoGPT, and Salesforce Agentforce.
+Register and verify AI agents on the blockchain with AstraSync - the first decentralized AI agent registry.
 
 ## 🚀 Quick Start
 
 ```bash
-# Clone the repository
+pip install git+https://github.com/AstraSyncAI/astrasync-python-sdk.git
+```
+
+```python
+from astrasync import AstraSync
+
+# Initialize client
+client = AstraSync(email="developer@example.com")
+
+# Register an agent
+result = client.register({
+    "name": "My AI Assistant",
+    "description": "A helpful AI agent for customer support",
+    "owner": "ACME Corp",
+    "capabilities": ["chat", "analysis", "problem-solving"]
+})
+
+print(f"Agent ID: {result['agentId']}")
+print(f"Trust Score: {result['trustScore']}")  # API-assigned score
+```
+
+## 📋 Features
+
+- **Universal Agent Detection**: Auto-detects agent protocol/format
+- **Blockchain Registration**: Immutable record of agent identity (coming soon)
+- **Trust Scoring**: API-assigned trust scores for verified agents
+- **Simple Integration**: One SDK for all major AI agent frameworks
+- **Developer Preview**: Get early access and shape the future
+
+## 🤖 Supported Agent Formats
+
+### Google ADK (Agent Development Kit)
+```python
+# Schema-based agent
+adk_agent = {
+    "name": "ADK Assistant",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string"}
+        }
+    },
+    "output_schema": {
+        "type": "object",
+        "properties": {
+            "response": {"type": "string"}
+        }
+    },
+    "tools": ["search", "analyze", "summarize"],
+    "model": "gemini-1.5-pro"
+}
+
+result = client.register(adk_agent)
+```
+
+### OpenAI Assistants
+```python
+openai_agent = {
+    "model": "gpt-4",
+    "name": "Customer Support Bot",
+    "instructions": "You are a helpful customer support assistant.",
+    "tools": [{"type": "code_interpreter"}, {"type": "retrieval"}],
+    "description": "Handles customer inquiries and technical support"
+}
+
+result = client.register(openai_agent)
+```
+
+### MCP (Model Context Protocol)
+```python
+mcp_agent = {
+    "protocol": "ai-agent",
+    "name": "MCP Assistant",
+    "description": "Multi-capability AI agent",
+    "skills": [
+        {"name": "search", "description": "Search the web"},
+        {"name": "calculate", "description": "Perform calculations"}
+    ]
+}
+
+result = client.register(mcp_agent)
+```
+
+### AutoGPT
+```python
+autogpt_agent = {
+    "ai_name": "ResearchBot",
+    "ai_role": "Research Assistant",
+    "ai_goals": [
+        "Research topics thoroughly",
+        "Provide accurate information",
+        "Cite sources"
+    ]
+}
+
+result = client.register(autogpt_agent)
+```
+
+### Salesforce Agentforce
+```python
+agentforce_agent = {
+    "agent_type": "External",
+    "agent_template_type": "EinsteinServiceAgent",
+    "label": "Einstein Support Agent",
+    "topics": [
+        {"label": "Customer Support"},
+        {"label": "Technical Issues"}
+    ]
+}
+
+result = client.register(agentforce_agent)
+```
+
+### More Frameworks
+- **Letta (MemGPT)**: Memory-augmented agents
+- **IBM ACP**: Agent Communication Protocol
+- **LangChain** (coming soon)
+- **CrewAI** (coming soon)
+
+## 📊 Registration Response
+
+All registrations return a consistent response format:
+
+```python
+{
+    "agentId": "TEMP-1706439245-X7K9M2",      # Unique identifier
+    "status": "registered",                    # Registration status
+    "trustScore": "TEMP-95%",                 # API-assigned trust score
+    "blockchain": {
+        "status": "pending",
+        "message": "Blockchain registration queued"
+    },
+    "message": "Agent registered successfully"
+}
+```
+
+**Note**: During developer preview, all agents receive a temporary ID (`TEMP-XXX`) and placeholder trust score (`TEMP-95%`). Production IDs and dynamic trust scores will be assigned after account creation.
+
+## 🔍 Agent Detection
+
+The SDK automatically detects your agent's format:
+
+```python
+from astrasync import detect_agent_type
+
+agent_data = {
+    "model": "gpt-4",
+    "instructions": "...",
+    "tools": [...]
+}
+
+agent_type = detect_agent_type(agent_data)
+print(f"Detected type: {agent_type}")  # Output: "openai"
+```
+
+## 🛡️ Trust Scores
+
+Trust scores are assigned by the AstraSync API based on:
+- Agent verification status
+- Developer verification
+- Capability declarations
+- Compliance with standards
+
+**Important**: As of v0.2.1, the SDK uses trust scores exclusively from the API. Local calculation has been removed to ensure consistency across all registration methods.
+
+## 🔧 Advanced Usage
+
+### Custom Owner Information
+```python
+result = client.register(agent_data, owner="My Company Inc.")
+```
+
+### Verify Existing Registration
+```python
+verification = client.verify("TEMP-1706439245-X7K9M2")
+print(f"Agent exists: {verification['exists']}")
+```
+
+### Normalize Agent Data
+```python
+from astrasync import normalize_agent_data
+
+# Convert any format to standard structure
+normalized = normalize_agent_data(raw_agent_data)
+```
+
+## 📦 Installation Options
+
+### From GitHub (Recommended)
+```bash
+pip install git+https://github.com/AstraSyncAI/astrasync-python-sdk.git
+```
+
+### From PyPI (Coming Soon)
+```bash
+pip install astrasyncai
+```
+
+### Development Installation
+```bash
 git clone https://github.com/AstraSyncAI/astrasync-python-sdk.git
 cd astrasync-python-sdk
-
-# Install in development mode
 pip install -e .
+```
 
-# Or install from GitHub directly
-pip install git+https://github.com/AstraSyncAI/astrasync-python-sdk.git
-📋 Features
+## 🌟 Why AstraSync?
 
-🔍 Universal Auto-Detection: Automatically identifies agent formats from major frameworks
-⚡ 30-Second Integration: Simple API for instant agent registration
-🎯 Developer Preview: Free registration with temporary IDs during preview
-📊 Trust Scores: Automatic calculation based on agent capabilities
-🎨 Beautiful CLI: Rich terminal output with progress indicators
-🏢 Enterprise Ready: Salesforce Agentforce support for regulated industries
+- **First-Mover**: First blockchain registry for AI agents
+- **Compliance Ready**: Built for upcoming AI regulations
+- **Universal Support**: One SDK for all major agent frameworks
+- **Developer Friendly**: Simple API, comprehensive docs
+- **Future Proof**: Preparing for the autonomous agent economy
 
-🤖 Supported Agent Formats
-✅ Auto-Detected Formats
+## 🚧 Developer Preview Status
 
-OpenAI Assistants - model + instructions pattern
-Google ADK - Agent Development Kit for multi-agent orchestration
-MCP Servers - Model Context Protocol agents
-Letta (MemGPT) - Memory-enabled autonomous agents
-IBM Agent Control Protocol - Enterprise agent standard
-AutoGPT - Autonomous goal-driven agents
-Salesforce Agentforce - Enterprise digital labor platform
+This SDK is in active development. Current limitations:
 
-🔜 Coming Soon
+- ✅ Agent registration working
+- ✅ Auto-detection of 8+ agent formats
+- ✅ API-assigned trust scores
+- 🔄 Blockchain integration (in progress)
+- 🔄 Dynamic trust scoring (coming with accounts)
+- 🔄 Production agent IDs (after account creation)
 
-CrewAI multi-agent systems
-LangChain agents
-Custom formats via plugins
+## 📚 Documentation
 
-💻 Usage Examples
-Basic Registration
+- [API Reference](https://docs.astrasync.ai)
+- [Integration Guides](https://docs.astrasync.ai/guides)
+- [Agent Formats](https://docs.astrasync.ai/formats)
+- [Trust Score Methodology](https://docs.astrasync.ai/trust)
 
-**Jarred Sumner**: "Save that, then let's clean up and commit everything:"
+## 🤝 Contributing
 
-```bash
-# Clean up backup files
-rm astrasync/core.py.backup
-rm astrasync/utils/trust_score.py.backup
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-# Check final status
-git status
+## 📝 Changelog
 
-# Add everything
-git add .
+### v0.2.1
+- **BREAKING**: Trust scores now come exclusively from API
+- Removed local trust score calculation
+- Simplified migration path for account linking
+- All agents receive API-assigned trust scores
 
-# Commit with comprehensive message
-git commit -m "feat: Add Google ADK support to Python SDK
+### v0.2.0
+- Added Google ADK support
+- Added Agentforce support
+- Improved agent detection
+- Enhanced error handling
 
-- Add Google ADK detection patterns (schemas, agent_type, objects)
-- Fix detection order (ADK before OpenAI to prevent false matches)  
-- Handle string and dict tool formats in normalization
-- Add ADK-specific trust score bonuses (+5% structured output, +3% orchestration, +2% session management)
-- Fix owner field defaulting in registration
-- Add comprehensive examples in examples/register_google_adk.py
-- Add full test coverage in test_all_protocols.py
-- Update README to include Google ADK in supported formats
+### v0.1.0
+- Initial release
+- Support for MCP, Letta, ACP, OpenAI, AutoGPT
+- Basic registration and verification
 
-Google ADK agents now fully supported with auto-detection."
+## 📄 License
 
-# Tag as version 0.2.0
-git tag -a v0.2.0 -m "Version 0.2.0 - Google ADK support"
+MIT License - see [LICENSE](LICENSE) file for details.
 
-# Push everything
-git push origin main --tags
+## 🔗 Links
+
+- **Website**: [astrasync.ai](https://astrasync.ai)
+- **Documentation**: [docs.astrasync.ai](https://docs.astrasync.ai)
+- **API Status**: [status.astrasync.ai](https://status.astrasync.ai)
+- **GitHub**: [github.com/AstraSyncAI](https://github.com/AstraSyncAI)
+
+## 💬 Support
+
+- **Discord**: [Join our community](https://discord.gg/astrasync)
+- **Email**: developers@astrasync.ai
+- **Issues**: [GitHub Issues](https://github.com/AstraSyncAI/astrasync-python-sdk/issues)
+
+---
+
+**AstraSync** - Building trust infrastructure for the AI agent economy.

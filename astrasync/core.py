@@ -1,90 +1,59 @@
-import os
+"""
+AstraSync SDK - Core functionality
+"""
+from astrasync.utils.api import register_agent, verify_agent
+from astrasync.utils.detector import detect_agent_type, normalize_agent_data
+from astrasync.utils.validator import validate_email
 import json
-from typing import Dict, Any, Optional, Union
-from pathlib import Path
-
-from .utils.api import APIClient
-from .utils.detector import detect_agent_type, normalize_agent_data
-from .utils.trust_score import calculate_trust_score
-from .exceptions import ValidationError
 
 
 class AstraSync:
-    """AstraSync AI Agent Registration Client"""
+    """Main client for interacting with AstraSync API"""
     
-    def __init__(self, email: Optional[str] = None, api_url: Optional[str] = None):
-        self.email = email or os.getenv('ASTRASYNC_EMAIL')
-        self.api_url = api_url or os.getenv(
-            'ASTRASYNC_API_URL',
-            'https://astrasync-api-production.up.railway.app'
-        )
-        self.api_client = APIClient(self.api_url)
+    def __init__(self, email=None):
+        """Initialize AstraSync client
+        
+        Args:
+            email: Developer email for registration
+        """
+        self.email = email
     
-    def register(self, agent: Union[Dict[str, Any], str, Path, Any]) -> Dict[str, Any]:
-        """Register an AI agent with auto-detection"""
+    def register(self, agent_data, owner=None):
+        """Register an agent with AstraSync
         
-        agent_data = self._parse_agent_input(agent)
-        agent_type = detect_agent_type(agent_data)
-        normalized = normalize_agent_data(agent_data, agent_type)
+        Args:
+            agent_data: Agent configuration (dict or object)
+            owner: Optional owner override
+            
+        Returns:
+            Registration response from API
+        """
+        if not self.email:
+            raise ValueError("Email is required for registration. Initialize with AstraSync(email='your@email.com')")
         
-        email = normalized.get('owner_email') or self.email
-        if not email:
-            raise ValidationError(
-                "Email required. Set via constructor, ASTRASYNC_EMAIL env var, "
-                "or include in agent data"
-            )
+        if not validate_email(self.email):
+            raise ValueError(f"Invalid email format: {self.email}")
         
-        trust_score = calculate_trust_score(normalized)
+        # Normalize the agent data
+        normalized = normalize_agent_data(agent_data)
         
-        payload = {
-            "email": email,
-            "agent": {
-                "name": normalized['name'],
-                "description": normalized['description'],
-                "owner": normalized.get('owner') or email,  # Default owner to email if empty
-                "capabilities": normalized.get('capabilities', []),
-                "version": normalized.get('version', '1.0.0'),
-                "agentType": agent_type,
-                "trustScore": trust_score,
-                **normalized.get('metadata', {})
-            }
-        }
+        # Apply owner override if provided
+        if owner:
+            normalized['owner'] = owner
         
-        return self.api_client.register(payload)
+        # Make API call and return response AS-IS
+        response = register_agent(normalized, self.email)
+        
+        # Return the complete API response
+        return response
     
-    def verify(self, agent_id: str) -> Dict[str, Any]:
-        """Verify if an agent is registered"""
-        return self.api_client.verify(agent_id)
-    
-    def _parse_agent_input(self, agent: Union[Dict, str, Path, Any]) -> Dict:
-        """Parse various input formats including Google ADK objects"""
+    def verify(self, agent_id):
+        """Verify an agent registration
         
-        if isinstance(agent, dict):
-            return agent
-        elif isinstance(agent, (str, Path)):
-            path = Path(agent)
-            if path.exists():
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            else:
-                try:
-                    return json.loads(agent)
-                except json.JSONDecodeError:
-                    raise ValidationError(f"Invalid input: {agent}")
-        else:
-            # Handle Google ADK agent objects and other objects
-            # Try to convert object to dictionary representation
-            if hasattr(agent, 'to_dict'):
-                # If the object has a to_dict method, use it
-                return agent.to_dict()
-            elif hasattr(agent, '__dict__'):
-                # Otherwise, pass the object itself for detection
-                # The detector will handle extracting attributes
-                return agent
-            else:
-                # If all else fails, try to extract basic attributes
-                return {
-                    'name': getattr(agent, 'name', agent.__class__.__name__),
-                    'type': agent.__class__.__name__,
-                    '_raw_object': agent
-                }
+        Args:
+            agent_id: The agent ID to verify
+            
+        Returns:
+            Verification response from API
+        """
+        return verify_agent(agent_id)
