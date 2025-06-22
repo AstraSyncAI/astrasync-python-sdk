@@ -13,7 +13,7 @@ class APIClient:
         self.session = requests.Session()
         self.session.headers.update({
             'Content-Type': 'application/json',
-            'User-Agent': 'AstraSync-Python-SDK/0.1.0',
+            'User-Agent': 'AstraSync-Python-SDK/0.2.0',
             'x-source': 'python-sdk'  # Track SDK usage
         })
     

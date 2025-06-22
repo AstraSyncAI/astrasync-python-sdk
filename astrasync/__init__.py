@@ -5,7 +5,7 @@ from .core import AstraSync
 from .exceptions import AstraSyncError, RegistrationError, ValidationError
 from .decorators import register
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["AstraSync", "register", "AstraSyncError", "RegistrationError", "ValidationError"]
 
 # Convenience instance
