@@ -41,6 +41,15 @@ class AstraSync:
         if owner:
             normalized['owner'] = owner
         
+        # CRITICAL FIX: Ensure owner is never empty
+        if not normalized.get('owner') or normalized.get('owner') == '':
+            # Use the original agent_data owner if available
+            if isinstance(agent_data, dict) and agent_data.get('owner'):
+                normalized['owner'] = agent_data['owner']
+            else:
+                # Default to email domain or 'Unknown'
+                normalized['owner'] = self.email.split('@')[0] if '@' in self.email else 'Unknown'
+        
         # Make API call and return response AS-IS
         response = register_agent(normalized, self.email)
         
