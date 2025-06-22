@@ -156,9 +156,9 @@ try:
     verification = client.verify(agent_id)
     
     print(f"Agent ID: {agent_id}")
-    print(f"Exists: {verification.get('exists', False)}")
-    print(f"Status: {'✅ PASS' if verification.get('exists') else '❌ FAIL'}")
-    verify_passed = verification.get('exists', False)
+    print(f"Verified: {verification.get('verified', False)}")
+    print(f"Status: {'✅ PASS' if verification.get('verified') else '❌ FAIL'}")
+    verify_passed = verification.get('verified', False)
 except Exception as e:
     print(f"❌ Verification failed: {str(e)}")
     verify_passed = False
