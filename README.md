@@ -122,10 +122,44 @@ agentforce_agent = {
 result = client.register(agentforce_agent)
 ```
 
+### LangChain
+```python
+# LangChain agent configuration
+langchain_agent = {
+    "name": "Research Assistant",
+    "agent_type": "conversational",
+    "llm": "gpt-4",
+    "tools": ["search", "calculator", "code_interpreter"],
+    "memory": {"type": "conversation_buffer", "k": 10},
+    "prompt": "You are a helpful research assistant...",
+    "description": "AI agent for research and analysis"
+}
+
+result = client.register(langchain_agent)
+
+# Or use the LangChain-specific adapter
+from astrasync.adapters.langchain import register_langchain
+
+result = register_langchain(
+    agent=langchain_agent,
+    email="developer@example.com",
+    owner="Research Team"
+)
+
+# Automatic registration with decorator
+from astrasync.adapters.langchain import register_with_astrasync
+
+@register_with_astrasync(email="dev@example.com", owner="My Company")
+class MyLangChainAgent:
+    def __init__(self):
+        self.llm = "claude-3"
+        self.tools = ["web_search", "calculator"]
+        self.memory = {"type": "conversation_summary"}
+```
+
 ### More Frameworks
 - **Letta (MemGPT)**: Memory-augmented agents
 - **IBM ACP**: Agent Communication Protocol
-- **LangChain** (coming soon)
 - **CrewAI** (coming soon)
 
 ## 📊 Registration Response
@@ -227,7 +261,7 @@ pip install -e .
 This SDK is in active development. Current limitations:
 
 - ✅ Agent registration working
-- ✅ Auto-detection of 8+ agent formats
+- ✅ Auto-detection of 9+ agent formats (including LangChain)
 - ✅ API-assigned trust scores
 - 🔄 Blockchain integration (in progress)
 - 🔄 Dynamic trust scoring (coming with accounts)
@@ -245,6 +279,12 @@ This SDK is in active development. Current limitations:
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## 📝 Changelog
+
+### v0.2.2 (Latest)
+- **NEW**: Added LangChain support with auto-detection
+- **NEW**: LangChain-specific adapter with decorator support
+- **IMPROVED**: Enhanced agent detection logic
+- **ADDED**: Comprehensive LangChain examples
 
 ### v0.2.1
 - **BREAKING**: Trust scores now come exclusively from API

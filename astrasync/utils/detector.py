@@ -22,6 +22,15 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
             
             if 'google.adk' in module_name or class_name in ['Agent', 'ADKAgent']:
                 return 'google-adk'
+            
+            # Check for LangChain objects
+            if 'langchain' in module_name.lower():
+                return 'langchain'
+            
+            # Common LangChain class patterns
+            if any(pattern in class_name for pattern in ['Agent', 'Chain', 'Executor']):
+                if 'langchain' in str(type(agent_data)):
+                    return 'langchain'
         
         # Convert to dict for further checks
         if hasattr(agent_data, '__dict__'):
@@ -50,9 +59,20 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
         if all(isinstance(skill, dict) and 'name' in skill for skill in agent_data['skills']):
             return 'mcp'
     
-    # Letta (MemGPT)
+    # Check for LangChain before Letta (both can have memory)
+    # LangChain typically has llm + tools/memory combination
+    if 'llm' in agent_data and ('tools' in agent_data or 'memory' in agent_data):
+        # Additional check to ensure it's not another type
+        if 'agent_type' in agent_data and agent_data.get('agent_type') not in ['External', 'llm', 'sequential', 'parallel', 'loop']:
+            return 'langchain'
+        elif 'agent_type' not in agent_data:
+            return 'langchain'
+    
+    # Letta (MemGPT) - more specific check
     if 'memory' in agent_data and isinstance(agent_data.get('memory'), dict):
-        return 'letta'
+        # Letta-specific memory structure check
+        if 'type' not in agent_data.get('memory', {}) or agent_data.get('type') == 'agent':
+            return 'letta'
     
     if 'type' in agent_data and agent_data['type'] == 'agent' and 'memory' in agent_data:
         return 'letta'
@@ -174,6 +194,11 @@ def normalize_agent_data(agent_data: Union[Dict[str, Any], object]) -> Dict[str,
         topics = agent_data.get('topics', [])
         normalized['capabilities'] = [topic.get('label', '') for topic in topics if isinstance(topic, dict)]
         normalized['owner'] = agent_data.get('owner', agent_data.get('organization', 'Salesforce Org'))
+    
+    elif agent_type == 'langchain':
+        # Import here to avoid circular dependency
+        from ..adapters.langchain import normalize_agent_data as langchain_normalize
+        return langchain_normalize(agent_data)
     
     else:
         # Unknown type - use generic extraction
