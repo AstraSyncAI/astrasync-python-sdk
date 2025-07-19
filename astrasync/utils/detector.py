@@ -23,6 +23,10 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
             if 'google.adk' in module_name or class_name in ['Agent', 'ADKAgent']:
                 return 'google-adk'
             
+            # Check for CrewAI objects
+            if 'crewai' in module_name.lower():
+                return 'crewai'
+            
             # Check for LangChain objects
             if 'langchain' in module_name.lower():
                 return 'langchain'
@@ -59,7 +63,17 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
         if all(isinstance(skill, dict) and 'name' in skill for skill in agent_data['skills']):
             return 'mcp'
     
-    # Check for LangChain before Letta (both can have memory)
+    # Check for CrewAI before LangChain (both can have llm/tools)
+    # CrewAI has the distinctive role/goal/backstory combination
+    if all(key in agent_data for key in ['role', 'goal', 'backstory']):
+        return 'crewai'
+    
+    # Check for crew-specific patterns
+    if 'agents' in agent_data and 'tasks' in agent_data:
+        if isinstance(agent_data.get('agents'), list) and isinstance(agent_data.get('tasks'), list):
+            return 'crewai'
+    
+    # Check for LangChain after CrewAI
     # LangChain typically has llm + tools/memory combination
     if 'llm' in agent_data and ('tools' in agent_data or 'memory' in agent_data):
         # Additional check to ensure it's not another type
@@ -199,6 +213,11 @@ def normalize_agent_data(agent_data: Union[Dict[str, Any], object]) -> Dict[str,
         # Import here to avoid circular dependency
         from ..adapters.langchain import normalize_agent_data as langchain_normalize
         return langchain_normalize(agent_data)
+    
+    elif agent_type == 'crewai':
+        # Import here to avoid circular dependency
+        from ..adapters.crewai import normalize_agent_data as crewai_normalize
+        return crewai_normalize(agent_data)
     
     else:
         # Unknown type - use generic extraction

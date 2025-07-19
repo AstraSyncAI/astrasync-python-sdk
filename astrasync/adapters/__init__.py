@@ -14,11 +14,22 @@ from .langchain import (
     register_with_astrasync
 )
 
+from .crewai import (
+    normalize_agent_data as normalize_crewai,
+    register_crewai,
+    create_registration_decorator as crewai_decorator,
+    register_with_astrasync as crewai_register_decorator
+)
+
 __all__ = [
     'register_agentforce',
     'register_agentforce_deployment',
     'normalize_langchain',
     'register_langchain',
     'langchain_decorator',
-    'register_with_astrasync'
+    'register_with_astrasync',
+    'normalize_crewai',
+    'register_crewai',
+    'crewai_decorator',
+    'crewai_register_decorator'
 ]

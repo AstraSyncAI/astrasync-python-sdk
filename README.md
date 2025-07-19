@@ -157,10 +157,53 @@ class MyLangChainAgent:
         self.memory = {"type": "conversation_summary"}
 ```
 
+### CrewAI
+```python
+# CrewAI agent configuration
+crewai_agent = {
+    "name": "Research Specialist",
+    "role": "Senior Researcher",
+    "goal": "Conduct thorough research and analysis",
+    "backstory": "You are an experienced researcher with deep expertise in your field.",
+    "tools": ["search_tool", "analysis_tool"],
+    "memory": True,
+    "llm": "gpt-4",
+    "description": "Expert researcher for comprehensive analysis"
+}
+
+result = client.register(crewai_agent)
+
+# CrewAI crew configuration
+crew_config = {
+    "name": "Research Team",
+    "agents": [
+        {"role": "Researcher", "goal": "Find information"},
+        {"role": "Analyst", "goal": "Analyze findings"},
+        {"role": "Writer", "goal": "Create reports"}
+    ],
+    "tasks": [
+        {"description": "Research topic", "expected_output": "Research data"},
+        {"description": "Analyze data", "expected_output": "Analysis report"},
+        {"description": "Write report", "expected_output": "Final document"}
+    ],
+    "process": "sequential"
+}
+
+result = client.register(crew_config)
+
+# Or use the CrewAI-specific adapter
+from astrasync.adapters.crewai import register_crewai
+
+result = register_crewai(
+    agent=crewai_agent,
+    email="developer@example.com",
+    owner="Research Department"
+)
+```
+
 ### More Frameworks
 - **Letta (MemGPT)**: Memory-augmented agents
 - **IBM ACP**: Agent Communication Protocol
-- **CrewAI** (coming soon)
 
 ## 📊 Registration Response
 
@@ -261,7 +304,7 @@ pip install -e .
 This SDK is in active development. Current limitations:
 
 - ✅ Agent registration working
-- ✅ Auto-detection of 9+ agent formats (including LangChain)
+- ✅ Auto-detection of 10+ agent formats (including LangChain and CrewAI)
 - ✅ API-assigned trust scores
 - 🔄 Blockchain integration (in progress)
 - 🔄 Dynamic trust scoring (coming with accounts)
@@ -280,7 +323,13 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## 📝 Changelog
 
-### v0.2.2 (Latest)
+### v0.2.3 (Latest)
+- **NEW**: Added CrewAI support with auto-detection
+- **NEW**: Support for CrewAI agents, crews, and multi-agent teams
+- **NEW**: CrewAI-specific adapter with decorator support
+- **ADDED**: Comprehensive CrewAI examples
+
+### v0.2.2
 - **NEW**: Added LangChain support with auto-detection
 - **NEW**: LangChain-specific adapter with decorator support
 - **IMPROVED**: Enhanced agent detection logic
