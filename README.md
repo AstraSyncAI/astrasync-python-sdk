@@ -201,6 +201,69 @@ result = register_crewai(
 )
 ```
 
+### n8n
+```python
+# n8n AI Agent node configuration
+n8n_agent = {
+    "type": "n8n-nodes-langchain.agent",
+    "name": "Customer Support AI",
+    "parameters": {
+        "systemPrompt": "You are a helpful customer support assistant.",
+        "model": "gpt-4",
+        "tools": ["search", "calculator", "knowledge_base"],
+        "memory": {"type": "windowBuffer", "k": 10}
+    }
+}
+
+result = client.register(n8n_agent)
+
+# n8n workflow with AI agents
+n8n_workflow = {
+    "workflow": {
+        "name": "AI Automation Workflow",
+        "nodes": [
+            {"type": "webhook", "name": "Trigger"},
+            {"type": "n8n-nodes-langchain.agent", "name": "AI Agent"},
+            {"type": "http", "name": "API Call"}
+        ]
+    }
+}
+
+result = client.register(n8n_workflow)
+```
+
+### AgentStack
+```python
+# AgentStack agent configuration
+agentstack_agent = {
+    "agent_name": "Research-Assistant",
+    "system_prompt": "You are an expert research assistant...",
+    "model": "gpt-4",
+    "max_loops": 5,
+    "autosave": True,
+    "context_length": 100000,
+    "dynamic_temperature_enabled": True,
+    "tools": ["web_search", "document_analyzer"]
+}
+
+result = client.register(agentstack_agent)
+
+# AgentStack swarm configuration
+swarm_config = {
+    "swarm_architecture": {
+        "name": "Analysis-Swarm",
+        "swarm_type": "ConcurrentWorkflow",
+        "max_loops": 3
+    },
+    "agents": [
+        {"agent_name": "Data-Collector", "system_prompt": "Gather data..."},
+        {"agent_name": "Analyst", "system_prompt": "Analyze findings..."}
+    ]
+}
+
+result = client.register(swarm_config)
+```
+
 ### More Frameworks
 - **Letta (MemGPT)**: Memory-augmented agents
 - **IBM ACP**: Agent Communication Protocol
@@ -304,7 +367,7 @@ pip install -e .
 This SDK is in active development. Current limitations:
 
 - ✅ Agent registration working
-- ✅ Auto-detection of 10+ agent formats (including LangChain and CrewAI)
+- ✅ Auto-detection of 12+ agent formats (including LangChain, CrewAI, n8n, and AgentStack)
 - ✅ API-assigned trust scores
 - 🔄 Blockchain integration (in progress)
 - 🔄 Dynamic trust scoring (coming with accounts)
@@ -323,7 +386,14 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## 📝 Changelog
 
-### v0.2.3 (Latest)
+### v0.2.4 (Latest)
+- **NEW**: Added n8n workflow automation support
+- **NEW**: Added AgentStack (by AgentOps) support
+- **NEW**: Support for n8n AI agent nodes and workflows
+- **NEW**: Support for AgentStack agents, swarms, and YAML configs
+- **ADDED**: Examples for both n8n and AgentStack integrations
+
+### v0.2.3
 - **NEW**: Added CrewAI support with auto-detection
 - **NEW**: Support for CrewAI agents, crews, and multi-agent teams
 - **NEW**: CrewAI-specific adapter with decorator support

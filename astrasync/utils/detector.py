@@ -23,6 +23,14 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
             if 'google.adk' in module_name or class_name in ['Agent', 'ADKAgent']:
                 return 'google-adk'
             
+            # Check for AgentStack objects
+            if 'agentstack' in module_name.lower() or 'agentops' in module_name.lower():
+                return 'agentstack'
+            
+            # Check for n8n objects
+            if 'n8n' in module_name.lower():
+                return 'n8n'
+            
             # Check for CrewAI objects
             if 'crewai' in module_name.lower():
                 return 'crewai'
@@ -63,6 +71,37 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
         if all(isinstance(skill, dict) and 'name' in skill for skill in agent_data['skills']):
             return 'mcp'
     
+    # Check for n8n workflows/nodes first
+    if 'workflow' in agent_data or ('nodes' in agent_data and isinstance(agent_data.get('nodes'), list)):
+        # Check if it contains AI agent nodes
+        nodes = agent_data.get('nodes', agent_data.get('workflow', {}).get('nodes', []))
+        for node in nodes:
+            if isinstance(node, dict):
+                node_type = node.get('type', '')
+                if 'agent' in node_type.lower() or 'langchain' in node_type.lower():
+                    return 'n8n'
+    
+    # Check for single n8n node
+    if 'type' in agent_data and isinstance(agent_data.get('parameters'), dict):
+        if 'agent' in agent_data['type'].lower() or 'langchain' in agent_data['type'].lower():
+            return 'n8n'
+    
+    # Check for AgentStack patterns
+    if 'agents' in agent_data and isinstance(agent_data.get('agents'), list):
+        # Check if it's AgentStack format (has agent_name, system_prompt, etc.)
+        agents = agent_data['agents']
+        if agents and isinstance(agents[0], dict):
+            if any(key in agents[0] for key in ['agent_name', 'system_prompt', 'max_loops', 'saved_state_path']):
+                return 'agentstack'
+    
+    # Single AgentStack agent
+    if any(key in agent_data for key in ['agent_name', 'max_loops', 'autosave', 'saved_state_path', 'dynamic_temperature_enabled']):
+        return 'agentstack'
+    
+    # AgentStack swarm architecture
+    if 'swarm_architecture' in agent_data:
+        return 'agentstack'
+    
     # Check for CrewAI before LangChain (both can have llm/tools)
     # CrewAI has the distinctive role/goal/backstory combination
     if all(key in agent_data for key in ['role', 'goal', 'backstory']):
@@ -71,7 +110,11 @@ def detect_agent_type(agent_data: Union[Dict[str, Any], object]) -> str:
     # Check for crew-specific patterns
     if 'agents' in agent_data and 'tasks' in agent_data:
         if isinstance(agent_data.get('agents'), list) and isinstance(agent_data.get('tasks'), list):
-            return 'crewai'
+            # Additional check to ensure it's not AgentStack
+            agents = agent_data.get('agents', [])
+            if agents and isinstance(agents[0], dict):
+                if not any(key in agents[0] for key in ['agent_name', 'system_prompt']):
+                    return 'crewai'
     
     # Check for LangChain after CrewAI
     # LangChain typically has llm + tools/memory combination
@@ -218,6 +261,16 @@ def normalize_agent_data(agent_data: Union[Dict[str, Any], object]) -> Dict[str,
         # Import here to avoid circular dependency
         from ..adapters.crewai import normalize_agent_data as crewai_normalize
         return crewai_normalize(agent_data)
+    
+    elif agent_type == 'n8n':
+        # Import here to avoid circular dependency
+        from ..adapters.n8n import normalize_agent_data as n8n_normalize
+        return n8n_normalize(agent_data)
+    
+    elif agent_type == 'agentstack':
+        # Import here to avoid circular dependency
+        from ..adapters.agentstack import normalize_agent_data as agentstack_normalize
+        return agentstack_normalize(agent_data)
     
     else:
         # Unknown type - use generic extraction
